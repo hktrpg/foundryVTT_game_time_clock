@@ -3,7 +3,6 @@ var isGM = false;
 var isNonGM = false;
 var GMLastTIME = -1;
 var nonGMLastTIME = -1;
-var switchOFF = false;
 Hooks.once("init", () => {
     game.settings.register("game_time_clock", "GMTime", {
         name: "GMTime",
