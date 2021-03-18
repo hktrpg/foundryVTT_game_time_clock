@@ -1,4 +1,4 @@
-const updateSpeed = 500;
+const updateSpeed = 1000;
 var isGM = false;
 var isNonGM = false;
 var GMLastTIME = -1;
@@ -58,17 +58,17 @@ const doUpdates = () => {
         let m2 = Math.floor((GMwithPlayerTimeplayTimeSec - (h2 * 60)) / 60);
         let s2 = Math.floor(GMwithPlayerTimeplayTimeSec % 60);
 
-        if (switchOFF == false) {
-            Hooks.on("renderSettings", (dialog, html) => {
-                if (html.find(`ul#game-details`)) {
-                    let GMwithPlayerTimeTEXT = `<li>${game.i18n.localize("gametime.GMWithPlayer")}<span>${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}</span></li>`;
-                    let GMTEXT = `<li>${game.i18n.localize("gametime.GM")}<span>${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}</span></li>`;
-                    html.find(`ul#game-details`).prepend(GMwithPlayerTimeTEXT);
-                    html.find(`ul#game-details`).prepend(GMTEXT);
-                }
-            });
-            switchOFF = true;
-        }
+        Hooks.on("renderSettings", (dialog, html) => {
+            let isExist = RegExp(/`${game.i18n.localize("gametime.GM")}`/).test(html.find(`ul#game-details`)[0].innerHTML)
+            if (isExist) return;
+            if (html.find(`ul#game-details`)) {
+                let GMwithPlayerTimeTEXT = `<li>${game.i18n.localize("gametime.GMWithPlayer")}<span>${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}</span></li>`;
+                let GMTEXT = `<li>${game.i18n.localize("gametime.GM")}<span>${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}</span></li>`;
+                html.find(`ul#game-details`).prepend(GMwithPlayerTimeTEXT);
+                html.find(`ul#game-details`).prepend(GMTEXT);
+            }
+        });
+
     } catch (e) {
         console.log('ERROR element.find(`[id=game-d', e)
     }
