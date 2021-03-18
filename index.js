@@ -12,6 +12,7 @@ Hooks.once("init", () => {
 });
 const doUpdates = () => {
     try {
+        console.log('WORK')
         let time = Date.now();
         let deltaS = time - lastSecond;
         lastTime = time;
