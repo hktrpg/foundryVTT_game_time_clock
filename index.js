@@ -3,6 +3,7 @@ var isGM = false;
 var isNonGM = false;
 var GMLastTIME = -1;
 var nonGMLastTIME = -1;
+var isExist = false;
 Hooks.once("init", () => {
     game.settings.register("game_time_clock", "GMTime", {
         name: "GMTime",
@@ -58,13 +59,13 @@ const doUpdates = () => {
         let s2 = Math.floor(GMwithPlayerTimeplayTimeSec % 60);
 
         Hooks.on("renderSettings", (dialog, html) => {
-            let isExist = RegExp(/`${game.i18n.localize("gametime.GM")}`/).test(html.find(`ul#game-details`)[0].innerHTML)
             if (isExist) return;
             if (html.find(`ul#game-details`)) {
                 let GMwithPlayerTimeTEXT = `<li>${game.i18n.localize("gametime.GMWithPlayer")}<span>${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}</span></li>`;
                 let GMTEXT = `<li>${game.i18n.localize("gametime.GM")}<span>${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}</span></li>`;
                 html.find(`ul#game-details`).prepend(GMwithPlayerTimeTEXT);
                 html.find(`ul#game-details`).prepend(GMTEXT);
+                isExist = true;
             }
         });
 
