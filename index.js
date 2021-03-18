@@ -1,4 +1,5 @@
 const updateSpeed = 250;
+let lastSecond = Date.now();
 Hooks.once("init", () => {
     game.settings.register("game_time_clock", "log", {
         Time: Number
