@@ -3,7 +3,7 @@ var isGM = false;
 var isNonGM = false;
 var GMLastTIME = -1;
 var nonGMLastTIME = -1;
-var a = 0;
+var switchOFF = false;
 Hooks.once("init", () => {
     game.settings.register("game_time_clock", "GMTime", {
         name: "GMTime",
@@ -51,7 +51,6 @@ const doUpdates = () => {
         let m = Math.floor((GMTimeplayTimeSec - (h * 60)) / 60);
         let s = Math.floor(GMTimeplayTimeSec % 60);
 
-        //console.log('GMTEXT', GMTEXT)
 
         let GMwithPlayerTimeplayTimeSec = GMwithPlayerTimeplayTime / 1000;
         let h2 = Math.floor(GMwithPlayerTimeplayTimeSec / 3600);
@@ -59,9 +58,8 @@ const doUpdates = () => {
         let m2 = Math.floor((GMwithPlayerTimeplayTimeSec - (h2 * 60)) / 60);
         let s2 = Math.floor(GMwithPlayerTimeplayTimeSec % 60);
 
-        if (a == 0) {
+        if (switchOFF == false) {
             Hooks.on("renderSettings", (dialog, html) => {
-                console.log('html.find(`ul#game-details`)', html.find(`ul#game-details`))
                 if (html.find(`ul#game-details`)) {
                     let GMwithPlayerTimeTEXT = `<li>${game.i18n.localize("gametime.GMWithPlayer")}<span>${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}</span></li>`;
                     let GMTEXT = `<li>${game.i18n.localize("gametime.GM")}<span>${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}</span></li>`;
@@ -69,10 +67,8 @@ const doUpdates = () => {
                     html.find(`ul#game-details`).prepend(GMTEXT);
                 }
             });
-            a = 1;
+            switchOFF = true;
         }
-
-        //  console.log('GMwithPlayerTimeTEXT', GMwithPlayerTimeTEXT)
     } catch (e) {
         console.log('ERROR element.find(`[id=game-d', e)
     }
