@@ -6,7 +6,7 @@
     <a href="https://patreon.com/HKTRPG" title="Donate to this project using Patreon"><img src="https://img.shields.io/badge/patreon-donate-red.svg" alt="Patreon donate button" /></a>
 </p>
 
-- It can count how much time did GM and Player spend the on the Game.
-- It will show on setting
+- It can count how much time did GM and Player spend on the Game.
+- It will show on setting.
 ## TO DO LIST
 - Update the time every second(DONE)
