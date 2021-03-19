@@ -8,11 +8,13 @@ var innerHTML = ""
 Hooks.once("init", () => {
     game.settings.register("game_time_clock", "GMTime", {
         name: "GMTime",
+        scope: "world",
         type: Number,
         default: 0
     });
     game.settings.register("game_time_clock", "GMwithPlayerTime", {
         name: "GMwithPlayerTime",
+        scope: "world",
         type: Number,
         default: 0
     });
@@ -30,22 +32,26 @@ const doUpdates = () => {
         isGM = (game.users.filter(user => user.active && user.isGM).length > 0) ? true : false;
         isNonGM = (game.users.filter(user => user.active && !user.isGM).length > 0) ? true : false;
         let time = Date.now();
-        if (isGM) {
-            if (GMLastTIME > 0) {
-                game.settings.set("game_time_clock", "GMTime",
-                    Number(GMTimeplayTime) + time - GMLastTIME
-                )
-            }
-            GMLastTIME = Date.now();
-        } else GMLastTIME = -1;
-        if (isNonGM && isGM) {
-            if (nonGMLastTIME > 0) {
-                game.settings.set("game_time_clock", "GMwithPlayerTime",
-                    Number(GMwithPlayerTimeplayTime) + time - nonGMLastTIME
-                )
-            }
-            nonGMLastTIME = Date.now();
-        } else nonGMLastTIME = -1;
+        if (game.user.isGM) {
+            if (isGM) {
+                if (GMLastTIME > 0) {
+                    game.settings.set("game_time_clock", "GMTime",
+                        Number(GMTimeplayTime) + time - GMLastTIME
+                    )
+                }
+                GMLastTIME = Date.now();
+            } else GMLastTIME = -1;
+            if (isNonGM && isGM) {
+                if (nonGMLastTIME > 0) {
+                    game.settings.set("game_time_clock", "GMwithPlayerTime",
+                        Number(GMwithPlayerTimeplayTime) + time - nonGMLastTIME
+                    )
+                }
+                nonGMLastTIME = Date.now();
+            } else nonGMLastTIME = -1;
+        }
+
+        
         let GMTimeplayTimeSec = GMTimeplayTime / 1000;
         let h = Math.floor(GMTimeplayTimeSec / 3600);
         if (h < 10) h = '0' + h;
