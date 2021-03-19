@@ -6,6 +6,7 @@ var nonGMLastTIME = -1;
 var isExist = false;
 var innerHTML = ""
 Hooks.once("init", () => {
+
     game.settings.register("game_time_clock", "GMTime", {
         name: "GMTime",
         scope: "world",
@@ -29,7 +30,8 @@ const doUpdates = () => {
     try {
         let GMTimeplayTime = game.settings.get("game_time_clock", "GMTime");
         let GMwithPlayerTimeplayTime = game.settings.get("game_time_clock", "GMwithPlayerTime");
-        isGM = (game.users.filter(user => user.active && user.isGM).length > 0) ? true : false;
+        isGM = ((game.users.filter(user => user.active && user.isGM).length > 0) && (game.users.filter(user => user.active && user.isGM)[0].id == game.user.id)) ? true : false;
+
         isNonGM = (game.users.filter(user => user.active && !user.isGM).length > 0) ? true : false;
         let time = Date.now();
         if (game.user.isGM) {
@@ -51,7 +53,7 @@ const doUpdates = () => {
             } else nonGMLastTIME = -1;
         }
 
-        
+
         let GMTimeplayTimeSec = GMTimeplayTime / 1000;
         let h = Math.floor(GMTimeplayTimeSec / 3600);
         if (h < 10) h = '0' + h;
