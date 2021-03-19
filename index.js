@@ -36,23 +36,21 @@ const doUpdates = () => {
         isTopGM = ((game.users.filter(user => user.active && user.isGM).length > 0) && (game.users.filter(user => user.active && user.isGM)[0].id == game.user.id)) ? true : false;
         isGM = (game.users.filter(user => user.active && user.isGM).length > 0) ? true : false;
         isNonGM = (game.users.filter(user => user.active && !user.isGM).length > 0) ? true : false;
-        if (game.user.isTopGM) {
-            if (isGM) {
-                if (GMLastTIME > 0) {
-                    game.settings.set("game_time_clock", "GMTime",
-                        Number(GMTimeplayTime) - time + GMLastTIME
-                    )
-                }
-                GMLastTIME = Date.now();
-            } else GMLastTIME = -1;
+        if (isTopGM) {
+            if (GMLastTIME > 0) {
+                game.settings.set("game_time_clock", "GMTime",
+                    Number((Number(GMTimeplayTime) - time + GMLastTIME))
+                )
+            }
+            GMLastTIME = Date.now();
             if (isNonGM && isGM) {
                 if (nonGMLastTIME > 0) {
                     game.settings.set("game_time_clock", "GMwithPlayerTime",
-                        Number(GMwithPlayerTimeplayTime) - time + nonGMLastTIME
+                        Number(Number(GMwithPlayerTimeplayTime) - time + nonGMLastTIME)
                     )
                 }
                 nonGMLastTIME = Date.now();
-            } else nonGMLastTIME = -1;
+            } else nonGMLastTIME = time;
         } else {
             if (isGM) {
                 GMLastTIME = Date.now();
