@@ -1,12 +1,15 @@
 const updateSpeed = 1000;
 var isGM = false;
 var isNonGM = false;
+var isTopGM = false;
 var GMLastTIME = -1;
 var nonGMLastTIME = -1;
 var isExist = false;
 var innerHTML = ""
+var GMTimeplayTime = 0;
+var GMwithPlayerTimeplayTime = 0;
+var time = null;
 Hooks.once("init", () => {
-
     game.settings.register("game_time_clock", "GMTime", {
         name: "GMTime",
         scope: "world",
@@ -19,7 +22,9 @@ Hooks.once("init", () => {
         type: Number,
         default: 0
     });
-
+    GMTimeplayTime = game.settings.get("game_time_clock", "GMTime");
+    GMwithPlayerTimeplayTime = game.settings.get("game_time_clock", "GMwithPlayerTime");
+    time = Date.now();
     setInterval(
         doUpdates,
         updateSpeed
@@ -28,17 +33,14 @@ Hooks.once("init", () => {
 });
 const doUpdates = () => {
     try {
-        let GMTimeplayTime = game.settings.get("game_time_clock", "GMTime");
-        let GMwithPlayerTimeplayTime = game.settings.get("game_time_clock", "GMwithPlayerTime");
-        isGM = ((game.users.filter(user => user.active && user.isGM).length > 0) && (game.users.filter(user => user.active && user.isGM)[0].id == game.user.id)) ? true : false;
-
+        isTopGM = ((game.users.filter(user => user.active && user.isGM).length > 0) && (game.users.filter(user => user.active && user.isGM)[0].id == game.user.id)) ? true : false;
+        isGM = (game.users.filter(user => user.active && user.isGM).length > 0) ? true : false;
         isNonGM = (game.users.filter(user => user.active && !user.isGM).length > 0) ? true : false;
-        let time = Date.now();
-        if (game.user.isGM) {
+        if (game.user.isTopGM) {
             if (isGM) {
                 if (GMLastTIME > 0) {
                     game.settings.set("game_time_clock", "GMTime",
-                        Number(GMTimeplayTime) + time - GMLastTIME
+                        Number(GMTimeplayTime) - time + GMLastTIME
                     )
                 }
                 GMLastTIME = Date.now();
@@ -46,26 +48,33 @@ const doUpdates = () => {
             if (isNonGM && isGM) {
                 if (nonGMLastTIME > 0) {
                     game.settings.set("game_time_clock", "GMwithPlayerTime",
-                        Number(GMwithPlayerTimeplayTime) + time - nonGMLastTIME
+                        Number(GMwithPlayerTimeplayTime) - time + nonGMLastTIME
                     )
                 }
                 nonGMLastTIME = Date.now();
             } else nonGMLastTIME = -1;
+        } else {
+            if (isGM) {
+                GMLastTIME = Date.now();
+            } else GMLastTIME = time;
+            if (isNonGM && isGM) {
+                nonGMLastTIME = Date.now();
+            } else nonGMLastTIME = time;
         }
 
 
-        let GMTimeplayTimeSec = GMTimeplayTime / 1000;
+        let GMTimeplayTimeSec = Number((Number(GMTimeplayTime) - time + GMLastTIME) / 1000);
         let h = Math.floor(GMTimeplayTimeSec / 3600);
         if (h < 10) h = '0' + h;
-        let m = Math.floor((GMTimeplayTimeSec - (h * 60)) / 60);
-        let s = Math.floor(GMTimeplayTimeSec % 60);
+        let m = Math.floor(GMTimeplayTimeSec % 3600 / 60);
+        let s = Math.floor(GMTimeplayTimeSec % 3600 % 60);
 
 
-        let GMwithPlayerTimeplayTimeSec = GMwithPlayerTimeplayTime / 1000;
+        let GMwithPlayerTimeplayTimeSec = Number((Number(GMwithPlayerTimeplayTime) - time + nonGMLastTIME)) / 1000;
         let h2 = Math.floor(GMwithPlayerTimeplayTimeSec / 3600);
         if (h2 < 10) h2 = '0' + h2;
-        let m2 = Math.floor((GMwithPlayerTimeplayTimeSec - (h2 * 60)) / 60);
-        let s2 = Math.floor(GMwithPlayerTimeplayTimeSec % 60);
+        let m2 = Math.floor(GMwithPlayerTimeplayTimeSec % 3600 / 60);
+        let s2 = Math.floor(GMwithPlayerTimeplayTimeSec % 3600 % 60);
         if (isExist) {
             let org = innerHTML[0].innerHTML.replace(RegExp(`<li>${game.i18n.localize("gametime.GM")}<span>\\d+:\\d+:\\d+</span></li>`), `<li>${game.i18n.localize("gametime.GM")}<span>${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}</span></li>`).replace(RegExp(`<li>${game.i18n.localize("gametime.GMWithPlayer")}<span>\\d+:\\d+:\\d+</span></li>`), `<li>${game.i18n.localize("gametime.GMWithPlayer")}<span>${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}</span></li>`)
             innerHTML[0].innerHTML = org;
