@@ -4,6 +4,7 @@ var isNonGM = false;
 var GMLastTIME = -1;
 var nonGMLastTIME = -1;
 var isExist = false;
+var innerHTML = ""
 Hooks.once("init", () => {
     game.settings.register("game_time_clock", "GMTime", {
         name: "GMTime",
@@ -57,14 +58,19 @@ const doUpdates = () => {
         if (h2 < 10) h2 = '0' + h2;
         let m2 = Math.floor((GMwithPlayerTimeplayTimeSec - (h2 * 60)) / 60);
         let s2 = Math.floor(GMwithPlayerTimeplayTimeSec % 60);
-
+        if (isExist) {
+            let org = innerHTML[0].innerHTML.replace(RegExp(`<li>${game.i18n.localize("gametime.GM")}<span>\\d+:\\d+:\\d+</span></li>`), `<li>${game.i18n.localize("gametime.GM")}<span>${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}</span></li>`).replace(RegExp(`<li>${game.i18n.localize("gametime.GMWithPlayer")}<span>\\d+:\\d+:\\d+</span></li>`), `<li>${game.i18n.localize("gametime.GMWithPlayer")}<span>${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}</span></li>`)
+            innerHTML[0].innerHTML = org;
+        }
+        //<li>GM online time<span>03:06:54</span></li>
+        //<li>Player and GM online time<span>00:09:30</span></li>
         Hooks.on("renderSettings", (dialog, html) => {
             if (isExist) return;
             if (html.find(`ul#game-details`)) {
                 let GMwithPlayerTimeTEXT = `<li>${game.i18n.localize("gametime.GMWithPlayer")}<span>${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}</span></li>`;
                 let GMTEXT = `<li>${game.i18n.localize("gametime.GM")}<span>${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}</span></li>`;
                 html.find(`ul#game-details`).prepend(GMwithPlayerTimeTEXT);
-                html.find(`ul#game-details`).prepend(GMTEXT);
+                innerHTML = html.find(`ul#game-details`).prepend(GMTEXT);
                 isExist = true;
             }
         });

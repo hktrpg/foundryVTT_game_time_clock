@@ -9,4 +9,4 @@
 - It can count how many time did GM and Player spend the on the Game.
 - It will show on setting
 ## TO DO LIST
-- Update the time every second
+- Update the time every second(DONE)
