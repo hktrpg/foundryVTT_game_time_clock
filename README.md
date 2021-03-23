@@ -10,3 +10,6 @@
 - It will show on setting.
 ## TO DO LIST
 - Update the time every second(DONE)
+- Debug of some mod effect setting tab
+- Timer on active Encounters <-- a special timer for Combat only?
+- game clock setting - Stop timers when Game is Paused
