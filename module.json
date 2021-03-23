@@ -23,5 +23,5 @@
   ],
   "url": "https://github.com/hktrpg/foundryVTT_game_time_clock/",
   "manifest": "https://raw.githubusercontent.com/hktrpg/foundryVTT_game_time_clock/master/module.json",
-  "download": "https://github.com/hktrpg/foundryVTT_game_time_clock/archive/main.zip"
+  "download": "https://github.com/hktrpg/foundryVTT_game_time_clock/archive/refs/tags/v1.0.0.zip"
 }
