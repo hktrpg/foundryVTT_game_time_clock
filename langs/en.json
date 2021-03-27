@@ -1,4 +1,6 @@
 {
     "gametime.GMWithPlayer": "Player and GM online time",
-    "gametime.GM": "GM online time"
+    "gametime.GM": "GM online time",
+    "GMTimeClock.moduleSettingsPaused.name": "will the clock paused when game paused",
+    "GMTimeClock.moduleSettingsPaused.hint": "if it is checked the clock would stop count when the game is paused."
 }

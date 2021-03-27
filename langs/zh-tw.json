@@ -1,4 +1,6 @@
 {
     "gametime.GMWithPlayer": "GM與玩家的在線時間",
-    "gametime.GM": "GM的在線時間"
+    "gametime.GM": "GM的在線時間",
+    "GMTimeClock.moduleSettingsPaused.name": "會否跟從遊戲暫停",
+    "GMTimeClock.moduleSettingsPaused.hint": "如果打勾，遊戲暫停時，在線時間不會增加"
 }
