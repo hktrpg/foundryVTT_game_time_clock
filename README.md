@@ -9,7 +9,7 @@
 - It can count how much time did GM and Player spend on the Game.
 - It will show on setting.
 ## TO DO LIST
-- Update the time every second(DONE)
-- Debug of some mod effect setting tab
-- Timer on active Encounters <-- a special timer for Combat only?
-- game clock setting - Stop timers when Game is Paused
+- [x]Update the time every second (DONE)
+- [x]Debug of some mod effect setting tab (DONE)
+- [ ]Timer on active Encounters <-- a special timer for Combat only?
+- [x]game clock setting - Stop timers when Game is Paused (DONE)
