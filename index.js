@@ -32,6 +32,13 @@ Hooks.once("init", () => {
         type: Boolean
     });
 
+
+
+});
+Hooks.on("renderSettings", (dialog, html) => {
+    innerHTML = html.find(`ul#game-details`);
+});
+Hooks.once("ready", () => {
     GMTimeplayTime = game.settings.get("game_time_clock", "GMTime");
     GMwithPlayerTimeplayTime = game.settings.get("game_time_clock", "GMwithPlayerTime");
     startTime = Date.now();
@@ -39,8 +46,7 @@ Hooks.once("init", () => {
         doUpdates,
         updateSpeed
     );
-
-});
+})
 const doUpdates = () => {
     try {
         isPaused = (game.paused && game.settings.get("game_time_clock", "moduleSettingsPaused")) ? true : false;
@@ -49,8 +55,8 @@ const doUpdates = () => {
         isNonGM = (game.users.filter(user => user.active && !user.isGM).length > 0) ? true : false;
         switch (true) {
             case isPaused:
-                (GMLastTIME > 0) ? GMTimeplayTime = Number((Number(GMTimeplayTime) - startTime + GMLastTIME)): null;
-                (nonGMLastTIME > 0) ? GMwithPlayerTimeplayTime = Number(Number(GMwithPlayerTimeplayTime) - startTime + nonGMLastTIME): null;
+                (GMLastTIME > 0) ? GMTimeplayTime = Number((Number(GMTimeplayTime) - startTime + GMLastTIME)) : null;
+                (nonGMLastTIME > 0) ? GMwithPlayerTimeplayTime = Number(Number(GMwithPlayerTimeplayTime) - startTime + nonGMLastTIME) : null;
                 nonGMLastTIME = -1;
                 GMLastTIME = -1;
                 startTime = Date.now();
@@ -83,10 +89,6 @@ const doUpdates = () => {
                 break;
 
         }
-        Hooks.on("renderSettings", (dialog, html) => {
-            innerHTML = html.find(`ul#game-details`);
-            refresh()
-        });
 
     } catch (e) {
         console.log('ERROR element.find(`[id=game-d', e)
