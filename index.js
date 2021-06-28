@@ -32,6 +32,15 @@ Hooks.once("init", () => {
         type: Boolean
     });
 
+    game.settings.register("game_time_clock", "forceFalseDebugMode", {
+        name: game.i18n.localize("GMTimeClock.forceFalseDebugMode.name"),
+        hint: game.i18n.localize("GMTimeClock.forceFalseDebugMode.hint"),
+        scope: "client",
+        config: true,
+        default: false,
+        type: Boolean
+    });
+
 
 
 });
@@ -42,6 +51,7 @@ Hooks.once("ready", () => {
     GMTimeplayTime = game.settings.get("game_time_clock", "GMTime");
     GMwithPlayerTimeplayTime = game.settings.get("game_time_clock", "GMwithPlayerTime");
     startTime = Date.now();
+
     setInterval(
         doUpdates,
         updateSpeed
@@ -49,6 +59,7 @@ Hooks.once("ready", () => {
 })
 const doUpdates = () => {
     try {
+        (game.settings.get("game_time_clock", "forceFalseDebugMode") && CONFIG.debug.hooks) ? CONFIG.debug.hooks = false : null;
         isPaused = (game.paused && game.settings.get("game_time_clock", "moduleSettingsPaused")) ? true : false;
         isTopGM = ((game.users.filter(user => user.active && user.isGM).length > 0) && (game.users.filter(user => user.active && user.isGM)[0].id == game.user.id)) ? true : false;
         isGM = (game.users.filter(user => user.active && user.isGM).length > 0) ? true : false;
