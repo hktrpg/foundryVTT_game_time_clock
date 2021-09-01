@@ -1,7 +1,6 @@
 # foundryVTT game time clock
 ![demo](https://user-images.githubusercontent.com/23254376/111742237-bc5a4e80-88c2-11eb-8b77-31aa9726ffed.png)
 
-![download]()
 <p align="center">
     <a href="https://discord.gg/vx4kcm7" title="GitHub all releases!"><img src="https://img.shields.io/github/downloads/hktrpg/foundryVTT_game_time_clock/total" alt="GitHub all releases" /></a>
     <a href="https://discord.gg/vx4kcm7" title="Join the discord server!"><img src="https://img.shields.io/discord/278202347165974529?logo=discord" alt="Discord invite button" /></a>
