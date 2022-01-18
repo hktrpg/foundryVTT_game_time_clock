@@ -4,7 +4,9 @@ var isNonGM = false;
 var isTopGM = false;
 var GMLastTIME = -1;
 var nonGMLastTIME = -1;
-var innerHTML = ""
+var innerHTML;
+var innerHTMLGM;
+var innerHTMLGMxPlayer;
 var GMTimeplayTime = 0;
 var GMwithPlayerTimeplayTime = 0;
 var startTime = null;
@@ -118,14 +120,20 @@ const doUpdates = () => {
         if (h2 < 10) h2 = '0' + h2;
         let m2 = Math.floor(GMwithPlayerTimeplayTimeSec % 3600 / 60);
         let s2 = Math.floor(GMwithPlayerTimeplayTimeSec % 3600 % 60);
-        if (innerHTML && innerHTML[0].innerHTML.match(game.i18n.localize("gametime.GM"))) {
-            let org = innerHTML[0].innerHTML.replace(RegExp(`<li>${game.i18n.localize("gametime.GM")}<span>\\d+:\\d+:\\d+</span></li>`), `<li>${game.i18n.localize("gametime.GM")}<span>${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}</span></li>`).replace(RegExp(`<li>${game.i18n.localize("gametime.GMWithPlayer")}<span>\\d+:\\d+:\\d+</span></li>`), `<li>${game.i18n.localize("gametime.GMWithPlayer")}<span>${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}</span></li>`)
-            innerHTML[0].innerHTML = org;
-        } else if (innerHTML) {
-            let GMwithPlayerTimeTEXT = `<li>${game.i18n.localize("gametime.GMWithPlayer")}<span>${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}</span></li>`;
-            let GMTEXT = `<li>${game.i18n.localize("gametime.GM")}<span>${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}</span></li>`;
+        if (!innerHTMLGM || !innerHTMLGMxPlayer) {
+            let GMwithPlayerTimeTEXT = `<li id="game-time-GMxPlayer">${game.i18n.localize("gametime.GMWithPlayer")}<span>${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}</span></li>`;
+            let GMTEXT = `<li  id="game-time-GM-only">${game.i18n.localize("gametime.GM")}<span>${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}</span></li>`;
             innerHTML.prepend(GMwithPlayerTimeTEXT);
             innerHTML = innerHTML.prepend(GMTEXT);
+            innerHTMLGM = innerHTML.find(`li#game-time-GM-only`);
+            innerHTMLGMxPlayer = innerHTML.find(`li#game-time-GMxPlayer`);
+            console.log('HKTRPG - Game Time Clock Setup Done :D')
+        }
+        if (innerHTMLGM) {
+            innerHTMLGM[0].innerHTML = innerHTMLGM[0].innerHTML
+                .replace(/\d+:\d+:\d+/, `${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}`)
+            innerHTMLGMxPlayer[0].innerHTML = innerHTMLGMxPlayer[0].innerHTML
+                .replace(/\d+:\d+:\d+/, `${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}`)
         }
     }
 };
