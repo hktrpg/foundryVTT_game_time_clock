@@ -4,11 +4,14 @@ var isNonGM = false;
 var isTopGM = false;
 var GMLastTIME = -1;
 var nonGMLastTIME = -1;
+var combatLastTIME = -1;
 var innerHTML;
 var innerHTMLGM;
 var innerHTMLGMxPlayer;
+var innerHTMLCombat;
 var GMTimeplayTime = 0;
 var GMwithPlayerTimeplayTime = 0;
+var combatTimeplayTime = 0;
 var startTime = null;
 var isPaused = false;
 Hooks.once("init", () => {
@@ -20,6 +23,12 @@ Hooks.once("init", () => {
     });
     game.settings.register("game_time_clock", "GMwithPlayerTime", {
         name: "GMwithPlayerTime",
+        scope: "world",
+        type: Number,
+        default: 0
+    });
+    game.settings.register("game_time_clock", "CombatTime", {
+        name: "CombatTime",
         scope: "world",
         type: Number,
         default: 0
@@ -72,6 +81,7 @@ Hooks.on("renderSettings", (dialog, html) => {
 Hooks.once("ready", () => {
     GMTimeplayTime = game.settings.get("game_time_clock", "GMTime");
     GMwithPlayerTimeplayTime = game.settings.get("game_time_clock", "GMwithPlayerTime");
+    combatTimeplayTime = game.settings.get("game_time_clock", "CombatTime");
     startTime = Date.now();
 
     setInterval(
@@ -86,29 +96,57 @@ const doUpdates = () => {
         isTopGM = ((game.users.filter(user => user.active && user.isGM).length > 0) && (game.users.filter(user => user.active && user.isGM)[0].id == game.user.id)) ? true : false;
         isGM = (game.users.filter(user => user.active && user.isGM).length > 0) ? true : false;
         isNonGM = (game.users.filter(user => user.active && !user.isGM).length > 0) ? true : false;
+        
+        // 從設置中讀取最新的時間值
+        GMTimeplayTime = game.settings.get("game_time_clock", "GMTime");
+        GMwithPlayerTimeplayTime = game.settings.get("game_time_clock", "GMwithPlayerTime");
+        combatTimeplayTime = game.settings.get("game_time_clock", "CombatTime");
         switch (true) {
             case isPaused:
                 (GMLastTIME > 0) ? GMTimeplayTime = Number((Number(GMTimeplayTime) - startTime + GMLastTIME)) : null;
                 (nonGMLastTIME > 0) ? GMwithPlayerTimeplayTime = Number(Number(GMwithPlayerTimeplayTime) - startTime + nonGMLastTIME) : null;
+                (combatLastTIME > 0) ? combatTimeplayTime = Number(Number(combatTimeplayTime) - startTime + combatLastTIME) : null;
                 nonGMLastTIME = -1;
                 GMLastTIME = -1;
+                combatLastTIME = -1;
                 startTime = Date.now();
                 break;
             case isTopGM:
                 if (GMLastTIME > 0) {
-                    game.settings.set("game_time_clock", "GMTime",
-                        Number((Number(GMTimeplayTime) - startTime + GMLastTIME))
-                    )
+                    // 計算從上次更新到現在的時間差
+                    let timeDiff = Date.now() - GMLastTIME;
+                    GMTimeplayTime += timeDiff;
+                    game.settings.set("game_time_clock", "GMTime", GMTimeplayTime);
                 }
                 GMLastTIME = Date.now();
                 if (isNonGM) {
                     if (nonGMLastTIME > 0) {
-                        game.settings.set("game_time_clock", "GMwithPlayerTime",
-                            Number(Number(GMwithPlayerTimeplayTime) - startTime + nonGMLastTIME)
-                        )
+                        // 計算從上次更新到現在的時間差
+                        let timeDiff = Date.now() - nonGMLastTIME;
+                        GMwithPlayerTimeplayTime += timeDiff;
+                        game.settings.set("game_time_clock", "GMwithPlayerTime", GMwithPlayerTimeplayTime);
                     }
                     nonGMLastTIME = Date.now();
                 } else nonGMLastTIME = startTime;
+                
+                // 檢查戰鬥狀態並計算戰鬥時間
+                if (game.combats.active?.started) {
+                    if (combatLastTIME > 0) {
+                        // 計算從上次更新到現在的時間差
+                        let timeDiff = Date.now() - combatLastTIME;
+                        combatTimeplayTime += timeDiff;
+                        game.settings.set("game_time_clock", "CombatTime", combatTimeplayTime);
+                    }
+                    combatLastTIME = Date.now();
+                } else {
+                    if (combatLastTIME > 0) {
+                        // 戰鬥結束，計算最後的時間差
+                        let timeDiff = Date.now() - combatLastTIME;
+                        combatTimeplayTime += timeDiff;
+                        game.settings.set("game_time_clock", "CombatTime", combatTimeplayTime);
+                        combatLastTIME = -1;
+                    }
+                }
                 refresh();
                 break;
             default:
@@ -118,6 +156,25 @@ const doUpdates = () => {
                 if (isNonGM && isGM) {
                     nonGMLastTIME = Date.now();
                 } else nonGMLastTIME = startTime;
+                
+                // 檢查戰鬥狀態並計算戰鬥時間
+                if (game.combats.active?.started) {
+                    if (combatLastTIME > 0) {
+                        // 計算從上次更新到現在的時間差
+                        let timeDiff = Date.now() - combatLastTIME;
+                        combatTimeplayTime += timeDiff;
+                        game.settings.set("game_time_clock", "CombatTime", combatTimeplayTime);
+                    }
+                    combatLastTIME = Date.now();
+                } else {
+                    if (combatLastTIME > 0) {
+                        // 戰鬥結束，計算最後的時間差
+                        let timeDiff = Date.now() - combatLastTIME;
+                        combatTimeplayTime += timeDiff;
+                        game.settings.set("game_time_clock", "CombatTime", combatTimeplayTime);
+                        combatLastTIME = -1;
+                    }
+                }
                 refresh();
                 break;
 
@@ -134,8 +191,9 @@ const doUpdates = () => {
             return;
         }
 
-        let GMTimeplayTimeSec = (GMLastTIME > 1) ? (Number(GMTimeplayTime) - startTime + GMLastTIME) / 1000 : Number(GMTimeplayTime) / 1000;
-        let GMwithPlayerTimeplayTimeSec = (nonGMLastTIME > 1) ? (Number(GMwithPlayerTimeplayTime) - startTime + nonGMLastTIME) / 1000 : Number(GMwithPlayerTimeplayTime) / 1000;
+        let GMTimeplayTimeSec = Number(GMTimeplayTime) / 1000;
+        let GMwithPlayerTimeplayTimeSec = Number(GMwithPlayerTimeplayTime) / 1000;
+        let combatTimeplayTimeSec = Number(combatTimeplayTime) / 1000;
 
         let h = Math.floor(GMTimeplayTimeSec / 3600);
         if (h < 10) h = '0' + h;
@@ -147,7 +205,12 @@ const doUpdates = () => {
         let m2 = Math.floor(GMwithPlayerTimeplayTimeSec % 3600 / 60);
         let s2 = Math.floor(GMwithPlayerTimeplayTimeSec % 3600 % 60);
 
-        if (!innerHTMLGM || !innerHTMLGMxPlayer) {
+        let h3 = Math.floor(combatTimeplayTimeSec / 3600);
+        if (h3 < 10) h3 = '0' + h3;
+        let m3 = Math.floor(combatTimeplayTimeSec % 3600 / 60);
+        let s3 = Math.floor(combatTimeplayTimeSec % 3600 % 60);
+
+        if (!innerHTMLGM || !innerHTMLGMxPlayer || !innerHTMLCombat) {
             let GMwithPlayerTimeTEXT = `<div class="build" id="game-time-GMxPlayer">
         <span class="label">${game.i18n.localize("gametime.GMWithPlayer")}</span>
         <span class="value">${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}</span>
@@ -156,10 +219,16 @@ const doUpdates = () => {
         <span class="label">${game.i18n.localize("gametime.GM")}</span>
         <span class="value">${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}</span>
     </div>`;
+            let CombatTEXT = `<div class="build" id="game-time-combat">
+        <span class="label">${game.i18n.localize("gametime.Combat")}</span>
+        <span class="value">${`${h3}`}:${`00${m3}`.slice(-2)}:${`00${s3}`.slice(-2)}</span>
+    </div>`;
             innerHTML.append(GMTEXT);
             innerHTML.append(GMwithPlayerTimeTEXT);
+            innerHTML.append(CombatTEXT);
             innerHTMLGM = innerHTML.find(`div#game-time-GM-only`);
             innerHTMLGMxPlayer = innerHTML.find(`div#game-time-GMxPlayer`);
+            innerHTMLCombat = innerHTML.find(`div#game-time-combat`);
             console.log('HKTRPG - Game Time Clock Setup Done :D')
         }
 
@@ -167,6 +236,7 @@ const doUpdates = () => {
             // Update the value spans directly
             innerHTMLGM.find('.value').text(`${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}`);
             innerHTMLGMxPlayer.find('.value').text(`${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}`);
+            innerHTMLCombat.find('.value').text(`${`${h3}`}:${`00${m3}`.slice(-2)}:${`00${s3}`.slice(-2)}`);
         }
     }
 };

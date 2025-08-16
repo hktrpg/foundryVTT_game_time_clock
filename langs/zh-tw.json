@@ -1,6 +1,7 @@
 {
     "gametime.GMWithPlayer": "GM與玩家的在線時間",
     "gametime.GM": "GM的在線時間",
+    "gametime.Combat": "戰鬥總時數",
     "GMTimeClock.moduleSettingsPaused.name": "會否跟從遊戲暫停",
     "GMTimeClock.moduleSettingsPaused.hint": "如果打勾，遊戲暫停時，在線時間不會增加",
     "GMTimeClock.forceFalseDebugMode.name": "強制關閉Debug模式",
