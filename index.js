@@ -47,7 +47,27 @@ Hooks.once("init", () => {
 
 });
 Hooks.on("renderSettings", (dialog, html) => {
-    innerHTML = html.find(`ul#game-details`);
+    console.log('HKTRPG - renderSettings', html);
+
+    // Ensure html is a jQuery object
+    const $html = html instanceof jQuery ? html : $(html);
+
+    // Try to find the old structure first (ul#game-details)
+    innerHTML = $html.find(`ul#game-details`);
+
+    if (innerHTML.length > 0) {
+        console.log('HKTRPG - Found old structure (ul#game-details)');
+    } else {
+        // If old structure not found, look for new structure
+        const infoSection = $html.find('section.info');
+        if (infoSection.length > 0) {
+            console.log('HKTRPG - Found new structure (section.info), adding directly to info section');
+            // Add directly to the info section, no temporary container needed
+            innerHTML = infoSection;
+        } else {
+            console.log('HKTRPG - Neither old nor new structure found');
+        }
+    }
 });
 Hooks.once("ready", () => {
     GMTimeplayTime = game.settings.get("game_time_clock", "GMTime");
@@ -108,6 +128,12 @@ const doUpdates = () => {
     }
 
     function refresh() {
+        // Check if we have a valid container to work with
+        if (!innerHTML || innerHTML.length === 0) {
+            console.log('HKTRPG - No valid container found for game time display');
+            return;
+        }
+
         let GMTimeplayTimeSec = (GMLastTIME > 1) ? (Number(GMTimeplayTime) - startTime + GMLastTIME) / 1000 : Number(GMTimeplayTime) / 1000;
         let GMwithPlayerTimeplayTimeSec = (nonGMLastTIME > 1) ? (Number(GMwithPlayerTimeplayTime) - startTime + nonGMLastTIME) / 1000 : Number(GMwithPlayerTimeplayTime) / 1000;
 
@@ -120,20 +146,27 @@ const doUpdates = () => {
         if (h2 < 10) h2 = '0' + h2;
         let m2 = Math.floor(GMwithPlayerTimeplayTimeSec % 3600 / 60);
         let s2 = Math.floor(GMwithPlayerTimeplayTimeSec % 3600 % 60);
+
         if (!innerHTMLGM || !innerHTMLGMxPlayer) {
-            let GMwithPlayerTimeTEXT = `<li id="game-time-GMxPlayer">${game.i18n.localize("gametime.GMWithPlayer")}<span>${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}</span></li>`;
-            let GMTEXT = `<li  id="game-time-GM-only">${game.i18n.localize("gametime.GM")}<span>${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}</span></li>`;
-            innerHTML.prepend(GMwithPlayerTimeTEXT);
-            innerHTML = innerHTML.prepend(GMTEXT);
-            innerHTMLGM = innerHTML.find(`li#game-time-GM-only`);
-            innerHTMLGMxPlayer = innerHTML.find(`li#game-time-GMxPlayer`);
+            let GMwithPlayerTimeTEXT = `<div class="build" id="game-time-GMxPlayer">
+        <span class="label">${game.i18n.localize("gametime.GMWithPlayer")}</span>
+        <span class="value">${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}</span>
+    </div>`;
+            let GMTEXT = `<div class="build" id="game-time-GM-only">
+        <span class="label">${game.i18n.localize("gametime.GM")}</span>
+        <span class="value">${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}</span>
+    </div>`;
+            innerHTML.append(GMTEXT);
+            innerHTML.append(GMwithPlayerTimeTEXT);
+            innerHTMLGM = innerHTML.find(`div#game-time-GM-only`);
+            innerHTMLGMxPlayer = innerHTML.find(`div#game-time-GMxPlayer`);
             console.log('HKTRPG - Game Time Clock Setup Done :D')
         }
-        if (innerHTMLGM) {
-            innerHTMLGM[0].innerHTML = innerHTMLGM[0].innerHTML
-                .replace(/\d+:\d+:\d+/, `${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}`)
-            innerHTMLGMxPlayer[0].innerHTML = innerHTMLGMxPlayer[0].innerHTML
-                .replace(/\d+:\d+:\d+/, `${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}`)
+
+        if (innerHTMLGM && innerHTMLGM.length > 0) {
+            // Update the value spans directly
+            innerHTMLGM.find('.value').text(`${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}`);
+            innerHTMLGMxPlayer.find('.value').text(`${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}`);
         }
     }
 };
