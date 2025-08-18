@@ -13,6 +13,7 @@
     "release:patch": "node scripts/auto-release.js patch",
     "release:minor": "node scripts/auto-release.js minor",
     "release:major": "node scripts/auto-release.js major",
+    "release:cleanup": "node scripts/cleanup-release.js",
     "validate": "node -e \"const module = require('./module.json'); console.log('✅ module.json is valid'); console.log('Version:', module.version);\"",
     "package": "node -e \"const fs = require('fs'); const path = require('path'); const archiver = require('archiver'); const output = fs.createWriteStream('game_time_clock-v' + require('./module.json').version + '.zip'); const archive = archiver('zip', {zlib: {level: 9}}); output.on('close', () => console.log('Package created:', archive.pointer() + ' bytes')); archive.pipe(output); archive.file('module.json', {name: 'module.json'}); archive.file('index.js', {name: 'index.js'}); archive.file('README.md', {name: 'README.md'}); archive.file('LICENSE', {name: 'LICENSE'}); archive.directory('langs/', 'langs/'); archive.finalize();\"",
     "test": "echo \"No tests specified\" && exit 0",
