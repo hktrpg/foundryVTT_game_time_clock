@@ -14,6 +14,8 @@ var GMwithPlayerTimeplayTime = 0;
 var combatTimeplayTime = 0;
 var startTime = null;
 var isPaused = false;
+var isV13 = false; // Flag to track FoundryVTT version
+
 Hooks.once("init", () => {
     game.settings.register("game_time_clock", "GMTime", {
         name: "GMTime",
@@ -51,33 +53,34 @@ Hooks.once("init", () => {
         default: false,
         type: Boolean
     });
-
-
-
 });
+
 Hooks.on("renderSettings", (dialog, html) => {
     console.log('HKTRPG - renderSettings', html);
 
     // Ensure html is a jQuery object
     const $html = html instanceof jQuery ? html : $(html);
 
-    // Try to find the old structure first (ul#game-details)
+    // Try to find the old structure first (ul#game-details) - v12
     innerHTML = $html.find(`ul#game-details`);
 
     if (innerHTML.length > 0) {
-        console.log('HKTRPG - Found old structure (ul#game-details)');
+        console.log('HKTRPG - Found v12 structure (ul#game-details)');
+        isV13 = false;
     } else {
-        // If old structure not found, look for new structure
+        // If old structure not found, look for new structure - v13
         const infoSection = $html.find('section.info');
         if (infoSection.length > 0) {
-            console.log('HKTRPG - Found new structure (section.info), adding directly to info section');
-            // Add directly to the info section, no temporary container needed
+            console.log('HKTRPG - Found v13 structure (section.info)');
             innerHTML = infoSection;
+            isV13 = true;
         } else {
-            console.log('HKTRPG - Neither old nor new structure found');
+            console.log('HKTRPG - Neither v12 nor v13 structure found');
+            innerHTML = null;
         }
     }
 });
+
 Hooks.once("ready", () => {
     GMTimeplayTime = game.settings.get("game_time_clock", "GMTime");
     GMwithPlayerTimeplayTime = game.settings.get("game_time_clock", "GMwithPlayerTime");
@@ -88,7 +91,8 @@ Hooks.once("ready", () => {
         doUpdates,
         updateSpeed
     );
-})
+});
+
 const doUpdates = () => {
     try {
         (game.settings.get("game_time_clock", "forceFalseDebugMode") && CONFIG.debug.hooks) ? CONFIG.debug.hooks = false : null;
@@ -97,10 +101,11 @@ const doUpdates = () => {
         isGM = (game.users.filter(user => user.active && user.isGM).length > 0) ? true : false;
         isNonGM = (game.users.filter(user => user.active && !user.isGM).length > 0) ? true : false;
         
-        // 從設置中讀取最新的時間值
+        // Read latest time values from settings
         GMTimeplayTime = game.settings.get("game_time_clock", "GMTime");
         GMwithPlayerTimeplayTime = game.settings.get("game_time_clock", "GMwithPlayerTime");
         combatTimeplayTime = game.settings.get("game_time_clock", "CombatTime");
+        
         switch (true) {
             case isPaused:
                 (GMLastTIME > 0) ? GMTimeplayTime = Number((Number(GMTimeplayTime) - startTime + GMLastTIME)) : null;
@@ -113,7 +118,7 @@ const doUpdates = () => {
                 break;
             case isTopGM:
                 if (GMLastTIME > 0) {
-                    // 計算從上次更新到現在的時間差
+                    // Calculate time difference from last update to now
                     let timeDiff = Date.now() - GMLastTIME;
                     GMTimeplayTime += timeDiff;
                     game.settings.set("game_time_clock", "GMTime", GMTimeplayTime);
@@ -121,7 +126,7 @@ const doUpdates = () => {
                 GMLastTIME = Date.now();
                 if (isNonGM) {
                     if (nonGMLastTIME > 0) {
-                        // 計算從上次更新到現在的時間差
+                        // Calculate time difference from last update to now
                         let timeDiff = Date.now() - nonGMLastTIME;
                         GMwithPlayerTimeplayTime += timeDiff;
                         game.settings.set("game_time_clock", "GMwithPlayerTime", GMwithPlayerTimeplayTime);
@@ -129,10 +134,10 @@ const doUpdates = () => {
                     nonGMLastTIME = Date.now();
                 } else nonGMLastTIME = startTime;
                 
-                // 檢查戰鬥狀態並計算戰鬥時間
+                // Check combat status and calculate combat time
                 if (game.combats.active?.started) {
                     if (combatLastTIME > 0) {
-                        // 計算從上次更新到現在的時間差
+                        // Calculate time difference from last update to now
                         let timeDiff = Date.now() - combatLastTIME;
                         combatTimeplayTime += timeDiff;
                         game.settings.set("game_time_clock", "CombatTime", combatTimeplayTime);
@@ -140,7 +145,7 @@ const doUpdates = () => {
                     combatLastTIME = Date.now();
                 } else {
                     if (combatLastTIME > 0) {
-                        // 戰鬥結束，計算最後的時間差
+                        // Combat ended, calculate final time difference
                         let timeDiff = Date.now() - combatLastTIME;
                         combatTimeplayTime += timeDiff;
                         game.settings.set("game_time_clock", "CombatTime", combatTimeplayTime);
@@ -157,10 +162,10 @@ const doUpdates = () => {
                     nonGMLastTIME = Date.now();
                 } else nonGMLastTIME = startTime;
                 
-                // 檢查戰鬥狀態並計算戰鬥時間
+                // Check combat status and calculate combat time
                 if (game.combats.active?.started) {
                     if (combatLastTIME > 0) {
-                        // 計算從上次更新到現在的時間差
+                        // Calculate time difference from last update to now
                         let timeDiff = Date.now() - combatLastTIME;
                         combatTimeplayTime += timeDiff;
                         game.settings.set("game_time_clock", "CombatTime", combatTimeplayTime);
@@ -168,7 +173,7 @@ const doUpdates = () => {
                     combatLastTIME = Date.now();
                 } else {
                     if (combatLastTIME > 0) {
-                        // 戰鬥結束，計算最後的時間差
+                        // Combat ended, calculate final time difference
                         let timeDiff = Date.now() - combatLastTIME;
                         combatTimeplayTime += timeDiff;
                         game.settings.set("game_time_clock", "CombatTime", combatTimeplayTime);
@@ -177,11 +182,10 @@ const doUpdates = () => {
                 }
                 refresh();
                 break;
-
         }
 
     } catch (e) {
-        console.log('ERROR element.find(`[id=game-d', e)
+        console.log('ERROR in doUpdates:', e)
     }
 
     function refresh() {
@@ -211,32 +215,56 @@ const doUpdates = () => {
         let s3 = Math.floor(combatTimeplayTimeSec % 3600 % 60);
 
         if (!innerHTMLGM || !innerHTMLGMxPlayer || !innerHTMLCombat) {
-            let GMwithPlayerTimeTEXT = `<div class="build" id="game-time-GMxPlayer">
+            if (isV13) {
+                // v13 structure - use div with build class
+                let GMwithPlayerTimeTEXT = `<div class="build" id="game-time-GMxPlayer">
         <span class="label">${game.i18n.localize("gametime.GMWithPlayer")}</span>
         <span class="value">${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}</span>
     </div>`;
-            let GMTEXT = `<div class="build" id="game-time-GM-only">
+                let GMTEXT = `<div class="build" id="game-time-GM-only">
         <span class="label">${game.i18n.localize("gametime.GM")}</span>
         <span class="value">${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}</span>
     </div>`;
-            let CombatTEXT = `<div class="build" id="game-time-combat">
+                let CombatTEXT = `<div class="build" id="game-time-combat">
         <span class="label">${game.i18n.localize("gametime.Combat")}</span>
         <span class="value">${`${h3}`}:${`00${m3}`.slice(-2)}:${`00${s3}`.slice(-2)}</span>
     </div>`;
-            innerHTML.append(GMTEXT);
-            innerHTML.append(GMwithPlayerTimeTEXT);
-            innerHTML.append(CombatTEXT);
-            innerHTMLGM = innerHTML.find(`div#game-time-GM-only`);
-            innerHTMLGMxPlayer = innerHTML.find(`div#game-time-GMxPlayer`);
-            innerHTMLCombat = innerHTML.find(`div#game-time-combat`);
+                innerHTML.append(GMTEXT);
+                innerHTML.append(GMwithPlayerTimeTEXT);
+                innerHTML.append(CombatTEXT);
+                innerHTMLGM = innerHTML.find(`div#game-time-GM-only`);
+                innerHTMLGMxPlayer = innerHTML.find(`div#game-time-GMxPlayer`);
+                innerHTMLCombat = innerHTML.find(`div#game-time-combat`);
+            } else {
+                // v12 structure - use li elements
+                let GMwithPlayerTimeTEXT = `<li id="game-time-GMxPlayer">${game.i18n.localize("gametime.GMWithPlayer")}<span>${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}</span></li>`;
+                let GMTEXT = `<li id="game-time-GM-only">${game.i18n.localize("gametime.GM")}<span>${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}</span></li>`;
+                let CombatTEXT = `<li id="game-time-combat">${game.i18n.localize("gametime.Combat")}<span>${`${h3}`}:${`00${m3}`.slice(-2)}:${`00${s3}`.slice(-2)}</span></li>`;
+                innerHTML.prepend(CombatTEXT);
+                innerHTML.prepend(GMwithPlayerTimeTEXT);
+                innerHTML.prepend(GMTEXT);
+                innerHTMLGM = innerHTML.find(`li#game-time-GM-only`);
+                innerHTMLGMxPlayer = innerHTML.find(`li#game-time-GMxPlayer`);
+                innerHTMLCombat = innerHTML.find(`li#game-time-combat`);
+            }
             console.log('HKTRPG - Game Time Clock Setup Done :D')
         }
 
         if (innerHTMLGM && innerHTMLGM.length > 0) {
-            // Update the value spans directly
-            innerHTMLGM.find('.value').text(`${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}`);
-            innerHTMLGMxPlayer.find('.value').text(`${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}`);
-            innerHTMLCombat.find('.value').text(`${`${h3}`}:${`00${m3}`.slice(-2)}:${`00${s3}`.slice(-2)}`);
+            if (isV13) {
+                // v13 - update the value spans directly
+                innerHTMLGM.find('.value').text(`${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}`);
+                innerHTMLGMxPlayer.find('.value').text(`${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}`);
+                innerHTMLCombat.find('.value').text(`${`${h3}`}:${`00${m3}`.slice(-2)}:${`00${s3}`.slice(-2)}`);
+            } else {
+                // v12 - update innerHTML with regex replacement
+                innerHTMLGM[0].innerHTML = innerHTMLGM[0].innerHTML
+                    .replace(/\d+:\d+:\d+/, `${`${h}`}:${`00${m}`.slice(-2)}:${`00${s}`.slice(-2)}`);
+                innerHTMLGMxPlayer[0].innerHTML = innerHTMLGMxPlayer[0].innerHTML
+                    .replace(/\d+:\d+:\d+/, `${`${h2}`}:${`00${m2}`.slice(-2)}:${`00${s2}`.slice(-2)}`);
+                innerHTMLCombat[0].innerHTML = innerHTMLCombat[0].innerHTML
+                    .replace(/\d+:\d+:\d+/, `${`${h3}`}:${`00${m3}`.slice(-2)}:${`00${s3}`.slice(-2)}`);
+            }
         }
     }
 };
