@@ -17,10 +17,14 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
         
     - name: Install dependencies
-      run: npm ci
+      run: |
+        if [ -f "package-lock.json" ]; then
+          npm ci
+        else
+          npm install
+        fi
       
     - name: Extract version from module.json
       id: version
@@ -28,6 +32,12 @@ jobs:
         VERSION=$(node -p "require('./module.json').version")
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Module version: $VERSION"
+        
+    - name: Extract compatibility info
+      id: compatibility
+      run: |
+        COMPAT=$(node -p "JSON.stringify(require('./module.json').compatibility)")
+        echo "compatibility=$COMPAT" >> $GITHUB_OUTPUT
         
     - name: Validate version consistency
       run: |
@@ -78,9 +88,9 @@ jobs:
           2. Extract to your FoundryVTT modules directory
           3. Enable the module in your world settings
           
-          ### Compatibility
-          - FoundryVTT: ${{ fromJSON(steps.module.outputs.compatibility).minimum }}+
-          - Verified: ${{ fromJSON(steps.module.outputs.compatibility).verified }}
+                     ### Compatibility
+           - FoundryVTT: ${{ fromJSON(steps.compatibility.outputs.compatibility).minimum }}+
+           - Verified: ${{ fromJSON(steps.compatibility.outputs.compatibility).verified }}
         draft: false
         prerelease: false
       env:
