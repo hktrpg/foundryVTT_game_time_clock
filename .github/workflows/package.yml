@@ -1,0 +1,83 @@
+name: Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to package (optional, will use module.json if not provided)'
+        required: false
+        default: ''
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: |
+        if [ -f "package-lock.json" ]; then
+          npm ci
+        else
+          npm install
+        fi
+      
+    - name: Extract version from module.json
+      id: version
+      run: |
+        if [ -n "${{ github.event.inputs.version }}" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+        else
+          VERSION=$(node -p "require('./module.json').version")
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Module version: $VERSION"
+        
+    - name: Create package directory
+      run: |
+        mkdir -p package
+        
+    - name: Copy files to package
+      run: |
+        # Copy all necessary files
+        cp module.json package/
+        cp index.js package/
+        cp README.md package/
+        cp LICENSE package/
+        
+        # Copy language files
+        cp -r langs package/
+        
+        echo "Files copied to package directory"
+        
+    - name: Create zip package
+      run: |
+        cd package
+        zip -r "../game_time_clock-v${{ steps.version.outputs.version }}.zip" .
+        cd ..
+        
+        echo "Package created: game_time_clock-v${{ steps.version.outputs.version }}.zip"
+        
+    - name: Upload package artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: game-time-clock-v${{ steps.version.outputs.version }}
+        path: game_time_clock-v${{ steps.version.outputs.version }}.zip
+        retention-days: 30
+        
+    - name: Display package info
+      run: |
+        echo "📦 Package Information:"
+        echo "Version: ${{ steps.version.outputs.version }}"
+        echo "File: game_time_clock-v${{ steps.version.outputs.version }}.zip"
+        echo "Size: $(du -h game_time_clock-v${{ steps.version.outputs.version }}.zip | cut -f1)"
+        echo ""
+        echo "Package contents:"
+        ls -la package/

@@ -1,0 +1,40 @@
+{
+  "name": "game-time-clock",
+  "version": "2.0.0",
+  "description": "FoundryVTT module to show how much time you spend in game",
+  "main": "index.js",
+  "scripts": {
+    "version:bump": "node scripts/version-bump.js",
+    "version:patch": "node scripts/version-bump.js patch",
+    "version:minor": "node scripts/version-bump.js minor",
+    "version:major": "node scripts/version-bump.js major",
+    "version:dry-run": "node scripts/version-bump.js patch --dry-run",
+    "validate": "node -e \"const module = require('./module.json'); console.log('✅ module.json is valid'); console.log('Version:', module.version);\"",
+    "package": "node -e \"const fs = require('fs'); const path = require('path'); const archiver = require('archiver'); const output = fs.createWriteStream('game_time_clock-v' + require('./module.json').version + '.zip'); const archive = archiver('zip', {zlib: {level: 9}}); output.on('close', () => console.log('Package created:', archive.pointer() + ' bytes')); archive.pipe(output); archive.file('module.json', {name: 'module.json'}); archive.file('index.js', {name: 'index.js'}); archive.file('README.md', {name: 'README.md'}); archive.file('LICENSE', {name: 'LICENSE'}); archive.directory('langs/', 'langs/'); archive.finalize();\"",
+    "test": "echo \"No tests specified\" && exit 0",
+    "lint": "echo \"No linting configured\" && exit 0"
+  },
+  "keywords": [
+    "foundryvtt",
+    "module",
+    "game-time",
+    "clock",
+    "tracking"
+  ],
+  "author": "HKTRPG",
+  "license": "MIT",
+  "devDependencies": {
+    "archiver": "^6.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hktrpg/foundryVTT_game_time_clock.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hktrpg/foundryVTT_game_time_clock/issues"
+  },
+  "homepage": "https://github.com/hktrpg/foundryVTT_game_time_clock#readme"
+}
