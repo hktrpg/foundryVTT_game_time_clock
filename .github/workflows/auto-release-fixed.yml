@@ -1,4 +1,4 @@
-name: Auto Release (Simple)
+name: Auto Release (Fixed)
 
 on:
   push:
@@ -28,21 +28,44 @@ jobs:
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Current version: $VERSION"
         
-    - name: Check if tag already exists
-      id: check-tag
+    - name: Check if release already exists
+      id: check-release
       run: |
         TAG="v${{ steps.version.outputs.version }}"
-        # Check both local and remote tags
-        if git tag -l | grep -q "^$TAG$" || git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
-          echo "tag-exists=true" >> $GITHUB_OUTPUT
-          echo "Tag $TAG already exists, skipping release"
+        RELEASE_EXISTS=false
+        
+        # Check if tag exists locally
+        if git tag -l | grep -q "^$TAG$"; then
+          echo "Tag $TAG exists locally"
+          RELEASE_EXISTS=true
+        fi
+        
+        # Check if tag exists remotely
+        if git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
+          echo "Tag $TAG exists remotely"
+          RELEASE_EXISTS=true
+        fi
+        
+        # Check if GitHub release exists
+        RELEASE_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+          "https://api.github.com/repos/hktrpg/foundryVTT_game_time_clock/releases/tags/$TAG" \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}")
+        
+        if [ "$RELEASE_RESPONSE" = "200" ]; then
+          echo "GitHub release for $TAG already exists"
+          RELEASE_EXISTS=true
+        fi
+        
+        if [ "$RELEASE_EXISTS" = true ]; then
+          echo "release-exists=true" >> $GITHUB_OUTPUT
+          echo "Release for v${{ steps.version.outputs.version }} already exists, skipping"
         else
-          echo "tag-exists=false" >> $GITHUB_OUTPUT
-          echo "Tag $TAG does not exist, will create release"
+          echo "release-exists=false" >> $GITHUB_OUTPUT
+          echo "No existing release found for v${{ steps.version.outputs.version }}, will create"
         fi
         
     - name: Validate module.json
-      if: steps.check-tag.outputs.tag-exists == 'false'
+      if: steps.check-release.outputs.release-exists == 'false'
       run: |
         node -e "
           const module = require('./module.json');
@@ -56,7 +79,7 @@ jobs:
         "
         
     - name: Create release package
-      if: steps.check-tag.outputs.tag-exists == 'false'
+      if: steps.check-release.outputs.release-exists == 'false'
       run: |
         # Create a temporary directory for packaging
         mkdir -p temp_package
@@ -77,17 +100,29 @@ jobs:
         
         echo "Package created: game_time_clock-v${{ steps.version.outputs.version }}.zip"
         
-    - name: Create Git tag
-      if: steps.check-tag.outputs.tag-exists == 'false'
+    - name: Create or update Git tag
+      if: steps.check-release.outputs.release-exists == 'false'
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git tag -a "v${{ steps.version.outputs.version }}" -m "Auto Release v${{ steps.version.outputs.version }}"
-        # Use force push to handle any conflicts
-        git push origin "v${{ steps.version.outputs.version }}" || git push --force origin "v${{ steps.version.outputs.version }}"
+        
+        TAG="v${{ steps.version.outputs.version }}"
+        
+        # Delete local tag if it exists
+        if git tag -l | grep -q "^$TAG$"; then
+          echo "Deleting existing local tag $TAG"
+          git tag -d "$TAG"
+        fi
+        
+        # Create new tag
+        git tag -a "$TAG" -m "Auto Release v${{ steps.version.outputs.version }}"
+        
+        # Push tag (force if needed)
+        echo "Pushing tag $TAG"
+        git push origin "$TAG" || git push --force origin "$TAG"
         
     - name: Create GitHub Release
-      if: steps.check-tag.outputs.tag-exists == 'false'
+      if: steps.check-release.outputs.release-exists == 'false'
       uses: softprops/action-gh-release@v1
       with:
         files: game_time_clock-v${{ steps.version.outputs.version }}.zip
@@ -114,7 +149,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Update manifest URLs
-      if: steps.check-tag.outputs.tag-exists == 'false'
+      if: steps.check-release.outputs.release-exists == 'false'
       run: |
         # Update the manifest URL to point to the new release
         sed -i "s|https://raw.githubusercontent.com/hktrpg/foundryVTT_game_time_clock/master/module.json|https://raw.githubusercontent.com/hktrpg/foundryVTT_game_time_clock/v${{ steps.version.outputs.version }}/module.json|g" module.json
@@ -125,7 +160,7 @@ jobs:
         echo "Updated manifest URLs for version ${{ steps.version.outputs.version }}"
         
     - name: Commit updated module.json
-      if: steps.check-tag.outputs.tag-exists == 'false'
+      if: steps.check-release.outputs.release-exists == 'false'
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
@@ -135,8 +170,8 @@ jobs:
         
     - name: Notify completion
       run: |
-        if [ "${{ steps.check-tag.outputs.tag-exists }}" == "true" ]; then
-          echo "ℹ️ Tag v${{ steps.version.outputs.version }} already exists - no release created"
+        if [ "${{ steps.check-release.outputs.release-exists }}" == "true" ]; then
+          echo "ℹ️ Release for v${{ steps.version.outputs.version }} already exists - no action taken"
         else
           echo "🎉 Auto release completed successfully!"
           echo "Version: ${{ steps.version.outputs.version }}"
