@@ -1,0 +1,171 @@
+name: Validate Module
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0'  # Run weekly on Sundays
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Extract and display version
+      id: version
+      run: |
+        VERSION=$(node -p "require('./module.json').version")
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "📦 Module: Game Time Clock"
+        echo "🔢 Version: $VERSION"
+        echo "📁 ID: $(node -p "require('./module.json').id")"
+        
+    - name: Validate module.json structure
+      run: |
+        echo "🔍 Validating module.json structure..."
+        
+        # Check required fields
+        node -e "
+          const module = require('./module.json');
+          const required = ['id', 'title', 'description', 'version', 'compatibility'];
+          const missing = required.filter(field => !module[field]);
+          
+          if (missing.length > 0) {
+            console.error('❌ Missing required fields:', missing);
+            process.exit(1);
+          }
+          
+          console.log('✅ All required fields present');
+          
+          // Check compatibility
+          if (!module.compatibility.minimum || !module.compatibility.verified) {
+            console.error('❌ Missing compatibility information');
+            process.exit(1);
+          }
+          
+          console.log('✅ Compatibility information valid');
+          console.log('   Minimum:', module.compatibility.minimum);
+          console.log('   Verified:', module.compatibility.verified);
+        "
+        
+    - name: Validate file structure
+      run: |
+        echo "📁 Validating file structure..."
+        
+        # Check required files
+        required_files=("module.json" "index.js" "README.md" "LICENSE")
+        for file in "${required_files[@]}"; do
+          if [ -f "$file" ]; then
+            echo "✅ $file exists"
+          else
+            echo "❌ $file missing"
+            exit 1
+          fi
+        done
+        
+        # Check langs directory
+        if [ -d "langs" ]; then
+          echo "✅ langs directory exists"
+          lang_count=$(find langs -name "*.json" | wc -l)
+          echo "   Found $lang_count language files"
+        else
+          echo "❌ langs directory missing"
+          exit 1
+        fi
+        
+    - name: Validate language files
+      run: |
+        echo "🌐 Validating language files..."
+        
+        for lang_file in langs/*.json; do
+          if [ -f "$lang_file" ]; then
+            lang_name=$(basename "$lang_file" .json)
+            echo "Checking $lang_name..."
+            
+            # Validate JSON syntax
+            if node -e "JSON.parse(require('fs').readFileSync('$lang_file', 'utf8')); console.log('✅ Valid JSON');" 2>/dev/null; then
+              echo "   ✅ Valid JSON syntax"
+            else
+              echo "   ❌ Invalid JSON syntax"
+              exit 1
+            fi
+            
+            # Check if it's not empty
+            file_size=$(wc -c < "$lang_file")
+            if [ "$file_size" -gt 2 ]; then
+              echo "   ✅ File not empty"
+            else
+              echo "   ⚠️  File appears to be empty"
+            fi
+          fi
+        done
+        
+    - name: Validate JavaScript syntax
+      run: |
+        echo "🔧 Validating JavaScript syntax..."
+        
+        if node -c index.js; then
+          echo "✅ index.js has valid syntax"
+        else
+          echo "❌ index.js has syntax errors"
+          exit 1
+        fi
+        
+    - name: Check for common issues
+      run: |
+        echo "🔍 Checking for common issues..."
+        
+        # Check for hardcoded paths
+        if grep -r "C:\\" . --exclude-dir=.git --exclude=*.md; then
+          echo "⚠️  Found potential hardcoded Windows paths"
+        fi
+        
+        if grep -r "/home/" . --exclude-dir=.git --exclude=*.md; then
+          echo "⚠️  Found potential hardcoded Linux paths"
+        fi
+        
+        # Check for console.log statements (development artifacts)
+        if grep -r "console\.log" . --exclude-dir=.git --exclude=*.md --exclude=*.json; then
+          echo "⚠️  Found console.log statements (consider removing for production)"
+        fi
+        
+        echo "✅ Common issue check completed"
+        
+    - name: Generate validation report
+      run: |
+        echo "📊 Validation Report" > validation-report.txt
+        echo "===================" >> validation-report.txt
+        echo "" >> validation-report.txt
+        echo "Module: Game Time Clock" >> validation-report.txt
+        echo "Version: ${{ steps.version.outputs.version }}" >> validation-report.txt
+        echo "Date: $(date)" >> validation-report.txt
+        echo "" >> validation-report.txt
+        
+        # Add file structure info
+        echo "File Structure:" >> validation-report.txt
+        find . -type f -name "*.js" -o -name "*.json" -o -name "*.md" | sort >> validation-report.txt
+        echo "" >> validation-report.txt
+        
+        # Add module.json info
+        echo "Module Configuration:" >> validation-report.txt
+        node -p "JSON.stringify(require('./module.json'), null, 2)" >> validation-report.txt
+        
+        echo "✅ Validation report generated"
+        
+    - name: Upload validation report
+      uses: actions/upload-artifact@v4
+      with:
+        name: validation-report
+        path: validation-report.txt
+        retention-days: 7
