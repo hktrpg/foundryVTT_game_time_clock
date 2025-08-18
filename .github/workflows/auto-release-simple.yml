@@ -1,0 +1,143 @@
+name: Auto Release (Simple)
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'module.json'
+
+jobs:
+  auto-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Extract version from module.json
+      id: version
+      run: |
+        VERSION=$(node -p "require('./module.json').version")
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Current version: $VERSION"
+        
+    - name: Check if tag already exists
+      id: check-tag
+      run: |
+        TAG="v${{ steps.version.outputs.version }}"
+        if git tag -l | grep -q "^$TAG$"; then
+          echo "tag-exists=true" >> $GITHUB_OUTPUT
+          echo "Tag $TAG already exists, skipping release"
+        else
+          echo "tag-exists=false" >> $GITHUB_OUTPUT
+          echo "Tag $TAG does not exist, will create release"
+        fi
+        
+    - name: Validate module.json
+      if: steps.check-tag.outputs.tag-exists == 'false'
+      run: |
+        node -e "
+          const module = require('./module.json');
+          const required = ['id', 'title', 'description', 'version', 'compatibility'];
+          const missing = required.filter(field => !module[field]);
+          if (missing.length > 0) {
+            console.error('Missing required fields:', missing);
+            process.exit(1);
+          }
+          console.log('✅ module.json validation passed');
+        "
+        
+    - name: Create release package
+      if: steps.check-tag.outputs.tag-exists == 'false'
+      run: |
+        # Create a temporary directory for packaging
+        mkdir -p temp_package
+        
+        # Copy all necessary files
+        cp module.json temp_package/
+        cp index.js temp_package/
+        cp README.md temp_package/
+        cp LICENSE temp_package/
+        
+        # Copy language files
+        cp -r langs temp_package/
+        
+        # Create the zip file
+        cd temp_package
+        zip -r "../game_time_clock-v${{ steps.version.outputs.version }}.zip" .
+        cd ..
+        
+        echo "Package created: game_time_clock-v${{ steps.version.outputs.version }}.zip"
+        
+    - name: Create Git tag
+      if: steps.check-tag.outputs.tag-exists == 'false'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git tag -a "v${{ steps.version.outputs.version }}" -m "Auto Release v${{ steps.version.outputs.version }}"
+        git push origin "v${{ steps.version.outputs.version }}"
+        
+    - name: Create GitHub Release
+      if: steps.check-tag.outputs.tag-exists == 'false'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: game_time_clock-v${{ steps.version.outputs.version }}.zip
+        name: Auto Release v${{ steps.version.outputs.version }}
+        body: |
+          ## Game Time Clock v${{ steps.version.outputs.version }}
+          
+          🤖 **Automatically generated release**
+          
+          ### Changes
+          - Version updated to ${{ steps.version.outputs.version }}
+          - See commit history for detailed changes
+          
+          ### Installation
+          1. Download the module.zip file
+          2. Extract to your FoundryVTT modules directory
+          3. Enable the module in your world settings
+          
+          ### Auto Release Info
+          This release was automatically generated when the version in `module.json` was updated.
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Update manifest URLs
+      if: steps.check-tag.outputs.tag-exists == 'false'
+      run: |
+        # Update the manifest URL to point to the new release
+        sed -i "s|https://raw.githubusercontent.com/hktrpg/foundryVTT_game_time_clock/master/module.json|https://raw.githubusercontent.com/hktrpg/foundryVTT_game_time_clock/v${{ steps.version.outputs.version }}/module.json|g" module.json
+        
+        # Update the download URL
+        sed -i "s|https://github.com/hktrpg/foundryVTT_game_time_clock/releases/latest/download/module.zip|https://github.com/hktrpg/foundryVTT_game_time_clock/releases/download/v${{ steps.version.outputs.version }}/game_time_clock-v${{ steps.version.outputs.version }}.zip|g" module.json
+        
+        echo "Updated manifest URLs for version ${{ steps.version.outputs.version }}"
+        
+    - name: Commit updated module.json
+      if: steps.check-tag.outputs.tag-exists == 'false'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add module.json
+        git commit -m "Update manifest URLs for v${{ steps.version.outputs.version }} [skip ci]"
+        git push
+        
+    - name: Notify completion
+      run: |
+        if [ "${{ steps.check-tag.outputs.tag-exists }}" == "true" ]; then
+          echo "ℹ️ Tag v${{ steps.version.outputs.version }} already exists - no release created"
+        else
+          echo "🎉 Auto release completed successfully!"
+          echo "Version: ${{ steps.version.outputs.version }}"
+          echo "Package: game_time_clock-v${{ steps.version.outputs.version }}.zip"
+          echo "Tag: v${{ steps.version.outputs.version }}"
+        fi
