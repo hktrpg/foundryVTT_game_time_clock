@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Extract version from module.json
+      id: version
+      run: |
+        VERSION=$(node -p "require('./module.json').version")
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Module version: $VERSION"
+        
+    - name: Validate version consistency
+      run: |
+        MODULE_VERSION=$(node -p "require('./module.json').version")
+        TAG_VERSION=${GITHUB_REF#refs/tags/v}
+        
+        if [ "$MODULE_VERSION" != "$TAG_VERSION" ]; then
+          echo "❌ Version mismatch: module.json has $MODULE_VERSION but tag is v$TAG_VERSION"
+          exit 1
+        fi
+        
+        echo "✅ Version consistency check passed: $MODULE_VERSION"
+        
+    - name: Create release package
+      run: |
+        # Create a temporary directory for packaging
+        mkdir -p temp_package
+        
+        # Copy all necessary files
+        cp module.json temp_package/
+        cp index.js temp_package/
+        cp README.md temp_package/
+        cp LICENSE temp_package/
+        
+        # Copy language files
+        cp -r langs temp_package/
+        
+        # Create the zip file
+        cd temp_package
+        zip -r "../game_time_clock-v${{ steps.version.outputs.version }}.zip" .
+        cd ..
+        
+        echo "Package created: game_time_clock-v${{ steps.version.outputs.version }}.zip"
+        
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: game_time_clock-v${{ steps.version.outputs.version }}.zip
+        name: Release v${{ steps.version.outputs.version }}
+        body: |
+          ## Game Time Clock v${{ steps.version.outputs.version }}
+          
+          ### Changes
+          - See commit history for detailed changes
+          
+          ### Installation
+          1. Download the module.zip file
+          2. Extract to your FoundryVTT modules directory
+          3. Enable the module in your world settings
+          
+          ### Compatibility
+          - FoundryVTT: ${{ fromJSON(steps.module.outputs.compatibility).minimum }}+
+          - Verified: ${{ fromJSON(steps.module.outputs.compatibility).verified }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Update manifest URLs
+      run: |
+        # Update the manifest URL to point to the new release
+        sed -i "s|https://raw.githubusercontent.com/hktrpg/foundryVTT_game_time_clock/master/module.json|https://raw.githubusercontent.com/hktrpg/foundryVTT_game_time_clock/v${{ steps.version.outputs.version }}/module.json|g" module.json
+        
+        # Update the download URL
+        sed -i "s|https://github.com/hktrpg/foundryVTT_game_time_clock/releases/latest/download/module.zip|https://github.com/hktrpg/foundryVTT_game_time_clock/releases/download/v${{ steps.version.outputs.version }}/game_time_clock-v${{ steps.version.outputs.version }}.zip|g" module.json
+        
+        echo "Updated manifest URLs for version ${{ steps.version.outputs.version }}"
+        
+    - name: Commit updated module.json
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add module.json
+        git commit -m "Update manifest URLs for v${{ steps.version.outputs.version }}"
+        git push
