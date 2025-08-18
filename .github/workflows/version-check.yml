@@ -1,0 +1,154 @@
+name: Version Check and Release
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - '**.js'
+      - '**.json'
+      - '**.md'
+      - 'langs/**'
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version type to bump (patch, minor, major)'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+
+jobs:
+  version-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Read current version
+      id: current_version
+      run: |
+        CURRENT_VERSION=$(node -p "require('./module.json').version")
+        echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+        echo "Current version: $CURRENT_VERSION"
+        
+    - name: Check for changes since last release
+      id: changes
+      run: |
+        # Get the last release tag
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        
+        if [ -z "$LAST_TAG" ]; then
+          echo "No previous releases found"
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+        else
+          echo "Last release: $LAST_TAG"
+          # Check if there are changes since last release
+          CHANGES=$(git diff --name-only $LAST_TAG HEAD | grep -E '\.(js|json|md)$|langs/' | wc -l)
+          echo "Files changed: $CHANGES"
+          
+          if [ "$CHANGES" -gt 0 ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+        fi
+        
+    - name: Bump version (if manual trigger)
+      if: github.event_name == 'workflow_dispatch'
+      id: bump_version
+      run: |
+        CURRENT_VERSION="${{ steps.current_version.outputs.current_version }}"
+        VERSION_TYPE="${{ github.event.inputs.version_type }}"
+        
+        # Parse current version
+        IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+        
+        case $VERSION_TYPE in
+          "major")
+            NEW_MAJOR=$((MAJOR + 1))
+            NEW_MINOR=0
+            NEW_PATCH=0
+            ;;
+          "minor")
+            NEW_MAJOR=$MAJOR
+            NEW_MINOR=$((MINOR + 1))
+            NEW_PATCH=0
+            ;;
+          "patch")
+            NEW_MAJOR=$MAJOR
+            NEW_MINOR=$MINOR
+            NEW_PATCH=$((PATCH + 1))
+            ;;
+        esac
+        
+        NEW_VERSION="$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH"
+        echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        echo "Bumping version from $CURRENT_VERSION to $NEW_VERSION"
+        
+        # Update module.json
+        node -e "
+          const fs = require('fs');
+          const moduleJson = JSON.parse(fs.readFileSync('./module.json', 'utf8'));
+          moduleJson.version = '$NEW_VERSION';
+          fs.writeFileSync('./module.json', JSON.stringify(moduleJson, null, 2) + '\n');
+        "
+        
+    - name: Create module.zip
+      if: steps.changes.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
+      run: |
+        # Create zip file excluding unnecessary files
+        zip -r module.zip . -x "*.git*" "*.github*" "node_modules/*" "*.DS_Store" "Thumbs.db" "*.zip"
+        
+    - name: Create Release
+      if: steps.changes.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ steps.bump_version.outputs.new_version || steps.current_version.outputs.current_version }}
+        name: Game Time Clock v${{ steps.bump_version.outputs.new_version || steps.current_version.outputs.current_version }}
+        body: |
+          ## Game Time Clock v${{ steps.bump_version.outputs.new_version || steps.current_version.outputs.current_version }}
+          
+          ### Changes
+          - Automated release for version ${{ steps.bump_version.outputs.new_version || steps.current_version.outputs.current_version }}
+          
+          ### Installation
+          1. Download the `module.zip` file
+          2. Extract it to your Foundry VTT `Data/modules/` directory
+          3. Enable the module in your world settings
+          
+          ### Files Included
+          - `module.json` - Module configuration
+          - `index.js` - Main module script
+          - `langs/` - Language files (English and Traditional Chinese)
+          - `README.md` - Documentation
+          - `LICENSE` - License information
+        files: module.zip
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Commit version bump
+      if: github.event_name == 'workflow_dispatch' && steps.bump_version.outputs.new_version
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add module.json
+        git commit -m "Bump version to ${{ steps.bump_version.outputs.new_version }}"
+        git push
+        
+    - name: Skip Release
+      if: steps.changes.outputs.has_changes == 'false' && github.event_name != 'workflow_dispatch'
+      run: |
+        echo "No changes detected since last release. Skipping release creation."
