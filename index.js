@@ -162,22 +162,42 @@ const doUpdates = () => {
                     nonGMLastTIME = Date.now();
                 } else nonGMLastTIME = startTime;
                 
-                // Check combat status and calculate combat time
-                if (game.combats.active?.started) {
-                    if (combatLastTIME > 0) {
-                        // Calculate time difference from last update to now
-                        let timeDiff = Date.now() - combatLastTIME;
-                        combatTimeplayTime += timeDiff;
-                        game.settings.set("game_time_clock", "CombatTime", combatTimeplayTime);
+                // Only GMs can update settings - non-GMs just track time locally
+                if (isGM) {
+                    // Check combat status and calculate combat time
+                    if (game.combats.active?.started) {
+                        if (combatLastTIME > 0) {
+                            // Calculate time difference from last update to now
+                            let timeDiff = Date.now() - combatLastTIME;
+                            combatTimeplayTime += timeDiff;
+                            game.settings.set("game_time_clock", "CombatTime", combatTimeplayTime);
+                        }
+                        combatLastTIME = Date.now();
+                    } else {
+                        if (combatLastTIME > 0) {
+                            // Combat ended, calculate final time difference
+                            let timeDiff = Date.now() - combatLastTIME;
+                            combatTimeplayTime += timeDiff;
+                            game.settings.set("game_time_clock", "CombatTime", combatTimeplayTime);
+                            combatLastTIME = -1;
+                        }
                     }
-                    combatLastTIME = Date.now();
                 } else {
-                    if (combatLastTIME > 0) {
-                        // Combat ended, calculate final time difference
-                        let timeDiff = Date.now() - combatLastTIME;
-                        combatTimeplayTime += timeDiff;
-                        game.settings.set("game_time_clock", "CombatTime", combatTimeplayTime);
-                        combatLastTIME = -1;
+                    // Non-GM users just track combat time locally without updating settings
+                    if (game.combats.active?.started) {
+                        if (combatLastTIME > 0) {
+                            // Calculate time difference from last update to now
+                            let timeDiff = Date.now() - combatLastTIME;
+                            combatTimeplayTime += timeDiff;
+                        }
+                        combatLastTIME = Date.now();
+                    } else {
+                        if (combatLastTIME > 0) {
+                            // Combat ended, calculate final time difference
+                            let timeDiff = Date.now() - combatLastTIME;
+                            combatTimeplayTime += timeDiff;
+                            combatLastTIME = -1;
+                        }
                     }
                 }
                 refresh();
