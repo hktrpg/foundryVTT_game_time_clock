@@ -16,6 +16,18 @@ var startTime = null;
 var isPaused = false;
 var isV13 = false; // Flag to track FoundryVTT version
 
+// Helper function to safely update settings with permission checks
+const safeUpdateSetting = (module, key, value) => {
+    try {
+        // Only allow GMs to update world-scoped settings
+        if (game.user.isGM) {
+            game.settings.set(module, key, value);
+        }
+    } catch (error) {
+        console.warn(`Game Time Clock: Failed to update setting ${key}:`, error);
+    }
+};
+
 Hooks.once("init", () => {
     game.settings.register("game_time_clock", "GMTime", {
         name: "GMTime",
@@ -82,6 +94,12 @@ Hooks.on("renderSettings", (dialog, html) => {
 });
 
 Hooks.once("ready", () => {
+    // Only initialize if the game is ready and user has proper permissions
+    if (!game.user) {
+        console.warn("Game Time Clock: User not available, skipping initialization");
+        return;
+    }
+
     GMTimeplayTime = game.settings.get("game_time_clock", "GMTime");
     GMwithPlayerTimeplayTime = game.settings.get("game_time_clock", "GMwithPlayerTime");
     combatTimeplayTime = game.settings.get("game_time_clock", "CombatTime");
@@ -95,16 +113,34 @@ Hooks.once("ready", () => {
 
 const doUpdates = () => {
     try {
-        (game.settings.get("game_time_clock", "forceFalseDebugMode") && CONFIG.debug.hooks) ? CONFIG.debug.hooks = false : null;
-        isPaused = (game.paused && game.settings.get("game_time_clock", "moduleSettingsPaused")) ? true : false;
+        // Check if game and user are available
+        if (!game || !game.user) {
+            return;
+        }
+
+        try {
+            (game.settings.get("game_time_clock", "forceFalseDebugMode") && CONFIG.debug.hooks) ? CONFIG.debug.hooks = false : null;
+            isPaused = (game.paused && game.settings.get("game_time_clock", "moduleSettingsPaused")) ? true : false;
+        } catch (error) {
+            console.warn("Game Time Clock: Failed to read module settings:", error);
+            isPaused = false;
+        }
         isTopGM = ((game.users.filter(user => user.active && user.isGM).length > 0) && (game.users.filter(user => user.active && user.isGM)[0].id == game.user.id)) ? true : false;
         isGM = (game.users.filter(user => user.active && user.isGM).length > 0) ? true : false;
         isNonGM = (game.users.filter(user => user.active && !user.isGM).length > 0) ? true : false;
         
-        // Read latest time values from settings
-        GMTimeplayTime = game.settings.get("game_time_clock", "GMTime");
-        GMwithPlayerTimeplayTime = game.settings.get("game_time_clock", "GMwithPlayerTime");
-        combatTimeplayTime = game.settings.get("game_time_clock", "CombatTime");
+        // Read latest time values from settings (only if accessible)
+        try {
+            GMTimeplayTime = game.settings.get("game_time_clock", "GMTime");
+            GMwithPlayerTimeplayTime = game.settings.get("game_time_clock", "GMwithPlayerTime");
+            combatTimeplayTime = game.settings.get("game_time_clock", "CombatTime");
+        } catch (error) {
+            console.warn("Game Time Clock: Failed to read settings:", error);
+            // Use default values if settings are not accessible
+            GMTimeplayTime = GMTimeplayTime || 0;
+            GMwithPlayerTimeplayTime = GMwithPlayerTimeplayTime || 0;
+            combatTimeplayTime = combatTimeplayTime || 0;
+        }
         
         switch (true) {
             case isPaused:
@@ -115,13 +151,14 @@ const doUpdates = () => {
                 GMLastTIME = -1;
                 combatLastTIME = -1;
                 startTime = Date.now();
+                refresh();
                 break;
             case isTopGM:
                 if (GMLastTIME > 0) {
                     // Calculate time difference from last update to now
                     let timeDiff = Date.now() - GMLastTIME;
                     GMTimeplayTime += timeDiff;
-                    game.settings.set("game_time_clock", "GMTime", GMTimeplayTime);
+                    safeUpdateSetting("game_time_clock", "GMTime", GMTimeplayTime);
                 }
                 GMLastTIME = Date.now();
                 if (isNonGM) {
@@ -129,7 +166,7 @@ const doUpdates = () => {
                         // Calculate time difference from last update to now
                         let timeDiff = Date.now() - nonGMLastTIME;
                         GMwithPlayerTimeplayTime += timeDiff;
-                        game.settings.set("game_time_clock", "GMwithPlayerTime", GMwithPlayerTimeplayTime);
+                        safeUpdateSetting("game_time_clock", "GMwithPlayerTime", GMwithPlayerTimeplayTime);
                     }
                     nonGMLastTIME = Date.now();
                 } else nonGMLastTIME = startTime;
@@ -140,7 +177,7 @@ const doUpdates = () => {
                         // Calculate time difference from last update to now
                         let timeDiff = Date.now() - combatLastTIME;
                         combatTimeplayTime += timeDiff;
-                        game.settings.set("game_time_clock", "CombatTime", combatTimeplayTime);
+                        safeUpdateSetting("game_time_clock", "CombatTime", combatTimeplayTime);
                     }
                     combatLastTIME = Date.now();
                 } else {
@@ -148,7 +185,7 @@ const doUpdates = () => {
                         // Combat ended, calculate final time difference
                         let timeDiff = Date.now() - combatLastTIME;
                         combatTimeplayTime += timeDiff;
-                        game.settings.set("game_time_clock", "CombatTime", combatTimeplayTime);
+                        safeUpdateSetting("game_time_clock", "CombatTime", combatTimeplayTime);
                         combatLastTIME = -1;
                     }
                 }
@@ -163,14 +200,14 @@ const doUpdates = () => {
                 } else nonGMLastTIME = startTime;
                 
                 // Only GMs can update settings - non-GMs just track time locally
-                if (isGM) {
+                if (game.user.isGM) {
                     // Check combat status and calculate combat time
                     if (game.combats.active?.started) {
                         if (combatLastTIME > 0) {
                             // Calculate time difference from last update to now
                             let timeDiff = Date.now() - combatLastTIME;
                             combatTimeplayTime += timeDiff;
-                            game.settings.set("game_time_clock", "CombatTime", combatTimeplayTime);
+                            safeUpdateSetting("game_time_clock", "CombatTime", combatTimeplayTime);
                         }
                         combatLastTIME = Date.now();
                     } else {
@@ -178,7 +215,7 @@ const doUpdates = () => {
                             // Combat ended, calculate final time difference
                             let timeDiff = Date.now() - combatLastTIME;
                             combatTimeplayTime += timeDiff;
-                            game.settings.set("game_time_clock", "CombatTime", combatTimeplayTime);
+                            safeUpdateSetting("game_time_clock", "CombatTime", combatTimeplayTime);
                             combatLastTIME = -1;
                         }
                     }
