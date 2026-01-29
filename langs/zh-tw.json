@@ -5,5 +5,28 @@
     "GMTimeClock.moduleSettingsPaused.name": "會否跟從遊戲暫停",
     "GMTimeClock.moduleSettingsPaused.hint": "如果打勾，遊戲暫停時，在線時間不會增加",
     "GMTimeClock.forceFalseDebugMode.name": "強制關閉Debug模式",
-    "GMTimeClock.forceFalseDebugMode.hint": "Debug模式中, 這MOD會每秒彈出更新信息."
+    "GMTimeClock.forceFalseDebugMode.hint": "Debug模式中, 這MOD會每秒彈出更新信息。",
+
+    "GMTimeClock.resetDialog.title": "重設遊戲時間計時器",
+    "GMTimeClock.resetDialog.step1Label": "請選擇要重設哪一個計時器，此動作無法還原。",
+    "GMTimeClock.resetDialog.optionGM": "重設 GM 的在線時間",
+    "GMTimeClock.resetDialog.optionGMWithPlayer": "重設 GM 與玩家的在線時間",
+    "GMTimeClock.resetDialog.optionCombat": "重設戰鬥總時數",
+    "GMTimeClock.resetDialog.optionAll": "重設所有計時器",
+    "GMTimeClock.resetDialog.cancel": "取消",
+    "GMTimeClock.resetDialog.step1Confirm": "下一步",
+    "GMTimeClock.resetDialog.step2Title": "確認重設",
+    "GMTimeClock.resetDialog.step2Warning": "你即將重設選定的計時器，這個動作無法還原。",
+    "GMTimeClock.resetDialog.step2Choice": "目標：{choice}",
+    "GMTimeClock.resetDialog.step2Confirm": "是的，重設",
+    "GMTimeClock.resetDialog.step2Back": "返回",
+    "GMTimeClock.resetDialog.onlyGM": "只有 GM 可以重設遊戲時間計時器。",
+
+    "GMTimeClock.resetMenu.title": "重設遊戲時間計時器",
+    "GMTimeClock.resetMenu.name": "重設計時器",
+    "GMTimeClock.resetMenu.label": "重設遊戲時間計時器",
+    "GMTimeClock.resetMenu.hint": "打開一個對話框，用來重設 GM、GM 與玩家或戰鬥用的計時器。此動作無法還原。",
+    "GMTimeClock.resetMenu.description": "按下下面的按鈕以打開 Game Time Clock 模組的重設對話框。",
+    "GMTimeClock.resetMenu.openButton": "打開重設對話框",
+    "GMTimeClock.resetMenu.note": "重設計時器是永久性的，無法還原，系統會顯示兩步驟確認對話框。"
 }
