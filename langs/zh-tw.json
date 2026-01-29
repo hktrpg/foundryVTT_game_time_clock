@@ -20,5 +20,13 @@
     "GMTimeClock.resetDialog.step2Choice": "目標：{choice}",
     "GMTimeClock.resetDialog.step2Confirm": "是的，重設",
     "GMTimeClock.resetDialog.step2Back": "返回",
-    "GMTimeClock.resetDialog.onlyGM": "只有 GM 可以重設遊戲時間計時器。"
+    "GMTimeClock.resetDialog.onlyGM": "只有 GM 可以重設遊戲時間計時器。",
+
+    "GMTimeClock.resetMenu.title": "重設遊戲時間計時器",
+    "GMTimeClock.resetMenu.name": "重設計時器",
+    "GMTimeClock.resetMenu.label": "重設遊戲時間計時器",
+    "GMTimeClock.resetMenu.hint": "打開一個對話框，用來重設 GM、GM 與玩家或戰鬥用的計時器。此動作無法還原。",
+    "GMTimeClock.resetMenu.description": "按下下面的按鈕以打開 Game Time Clock 模組的重設對話框。",
+    "GMTimeClock.resetMenu.openButton": "打開重設對話框",
+    "GMTimeClock.resetMenu.note": "重設計時器是永久性的，無法還原，系統會顯示兩步驟確認對話框。"
 }

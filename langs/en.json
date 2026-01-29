@@ -20,5 +20,13 @@
     "GMTimeClock.resetDialog.step2Choice": "Target: {choice}",
     "GMTimeClock.resetDialog.step2Confirm": "Yes, reset",
     "GMTimeClock.resetDialog.step2Back": "Back",
-    "GMTimeClock.resetDialog.onlyGM": "Only GMs can reset the game time clocks."
+    "GMTimeClock.resetDialog.onlyGM": "Only GMs can reset the game time clocks.",
+
+    "GMTimeClock.resetMenu.title": "Reset Game Time Clock",
+    "GMTimeClock.resetMenu.name": "Reset timers",
+    "GMTimeClock.resetMenu.label": "Reset Game Time Clock",
+    "GMTimeClock.resetMenu.hint": "Open a dialog to reset the GM, GM+Player, or combat timers. This cannot be undone.",
+    "GMTimeClock.resetMenu.description": "Click the button below to open the reset dialog for the Game Time Clock module.",
+    "GMTimeClock.resetMenu.openButton": "Open reset dialog",
+    "GMTimeClock.resetMenu.note": "Resetting timers is permanent and cannot be undone. A two-step confirmation dialog will be shown."
 }

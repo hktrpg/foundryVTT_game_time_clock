@@ -65,6 +65,42 @@ Hooks.once("init", () => {
         default: false,
         type: Boolean
     });
+
+    // Settings menu entry that exposes a reset button inside the Game Settings UI
+    if (game.settings.registerMenu) {
+        class GameTimeClockResetMenu extends FormApplication {
+            static get defaultOptions() {
+                const options = super.defaultOptions;
+                options.id = "game-time-clock-reset-menu";
+                options.title = game.i18n.localize("GMTimeClock.resetMenu.title");
+                options.template = "modules/game_time_clock/templates/reset-menu.html";
+                options.width = 480;
+                return options;
+            }
+
+            getData() {
+                return {};
+            }
+
+            activateListeners(html) {
+                super.activateListeners(html);
+                html.find('button[data-action="open-reset-dialog"]').on("click", ev => {
+                    ev.preventDefault();
+                    openResetDialog();
+                    this.close();
+                });
+            }
+        }
+
+        game.settings.registerMenu("game_time_clock", "resetMenu", {
+            name: game.i18n.localize("GMTimeClock.resetMenu.name"),
+            label: game.i18n.localize("GMTimeClock.resetMenu.label"),
+            hint: game.i18n.localize("GMTimeClock.resetMenu.hint"),
+            icon: "fas fa-undo",
+            type: GameTimeClockResetMenu,
+            restricted: true
+        });
+    }
 });
 
 Hooks.on("renderSettings", (dialog, html) => {
