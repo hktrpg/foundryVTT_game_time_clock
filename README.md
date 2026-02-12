@@ -7,6 +7,10 @@
     <a href="https://patreon.com/HKTRPG" title="Donate to this project using Patreon"><img src="https://img.shields.io/badge/patreon-donate-red.svg" alt="Patreon donate button" /></a>
 </p>
 
+<p align="center">
+    If you love it, you can <a href="https://patreon.com/HKTRPG" title="Support on Patreon">buy me a tea</a> 🍵
+</p>
+
 ## Features
 
 - It can count how much time the GM and players spend in the game.
