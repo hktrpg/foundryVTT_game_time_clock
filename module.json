@@ -11,7 +11,8 @@
   "version": "2.2.3",
   "compatibility": {
     "minimum": "10",
-    "verified": "13"
+    "verified": "13",
+    "maximum": "14"
   },
   "styles": [],
   "packs": [],
