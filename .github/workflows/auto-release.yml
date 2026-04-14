@@ -11,7 +11,7 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       
     - name: Read version from module.json
       id: version
@@ -24,7 +24,7 @@ jobs:
       id: check_release
       run: |
         # Check if a release with this version already exists
-        RELEASE_EXISTS=$(gh release list --limit 100 | grep -c "v${{ steps.version.outputs.version }}" || echo "0")
+        RELEASE_EXISTS=$(gh release list --limit 100 | grep -c "v${{ steps.version.outputs.version }}" || true)
         echo "release_exists=$RELEASE_EXISTS" >> $GITHUB_OUTPUT
         
         if [ "$RELEASE_EXISTS" -eq "1" ]; then
