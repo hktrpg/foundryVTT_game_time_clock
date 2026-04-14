@@ -8,11 +8,10 @@
       "discord": "zzz#8939"
     }
   ],
-  "version": "2.2.4",
+  "version": "2.2.5",
   "compatibility": {
     "minimum": "10",
-    "verified": "13",
-    "maximum": "14"
+    "verified": "14"
   },
   "styles": [],
   "packs": [],
